@@ -2,6 +2,7 @@ import six
 
 from . import util
 from . import tree
+from . import log
 from .tokenizer import (
     EndOfInput, Keyword, Modifier, BasicType, Identifier,
     Annotation, Literal, Operator, JavaToken,
@@ -94,8 +95,9 @@ class Parser(object):
     def __init__(self, tokens):
         self.tokens = util.LookAheadListIterator(tokens)
         self.tokens.set_default(EndOfInput(None))
-
         self.debug = False
+        self.logs = []
+
 
 # ------------------------------------------------------------------------------
 # ---- Debug control ----
@@ -285,7 +287,8 @@ class Parser(object):
                                               name=package_name,
                                               documentation=javadoc)
             package._position = token.position
-            
+
+            self.logs.append(log.Log(token.position[0] , "PackageDeclaration"))
             self.accept(';')
         else:
             self.tokens.pop_marker(True)
@@ -362,7 +365,7 @@ class Parser(object):
             type_declaration = self.parse_annotation_type_declaration()
         else:
             self.illegal("Expected type declaration")
-
+        self.logs.append(log.Log(token.position[0], str(type_declaration.__class__)))
         type_declaration._position = token.position
         type_declaration.modifiers = modifiers
         type_declaration.annotations = annotations
@@ -372,6 +375,7 @@ class Parser(object):
 
     @parse_debug
     def parse_normal_class_declaration(self):
+
         name = None
         type_params = None
         extends = None
@@ -382,6 +386,7 @@ class Parser(object):
 
         name = self.parse_identifier()
 
+        print("Parse Class Declare ",name)
         if self.would_accept('<'):
             type_params = self.parse_type_parameters()
 
@@ -934,6 +939,7 @@ class Parser(object):
         if self.would_accept(Identifier, '('):
             constructor_name = self.parse_identifier()
             method = self.parse_constructor_declarator_rest()
+
             method.name = constructor_name
         elif self.try_accept('void'):
             method_name = self.parse_identifier()
@@ -1396,6 +1402,7 @@ class Parser(object):
             statement = tree.IfStatement(condition=condition,
                                     then_statement=then,
                                     else_statement=else_statement)
+            self.logs.append(log.Log(token.position[0], str(tree.IfStatement.__class__)))
             statement._position = token.position
             return statement
 
@@ -1409,6 +1416,7 @@ class Parser(object):
             self.accept(';')
 
             statement = tree.AssertStatement(condition=condition, value=value)
+            self.logs.append(log.Log(token.position[0], str(tree.AssertStatement.__class__)))
             statement._position = token.position
             return statement
 
@@ -1420,6 +1428,7 @@ class Parser(object):
 
             statement = tree.SwitchStatement(expression=switch_expression, cases=switch_block)
             statement._position = token.position
+            self.logs.append(log.Log(token.position[0], str(tree.SwitchStatement.__class__)))
             return statement
 
         elif self.try_accept('while'):
@@ -1428,6 +1437,7 @@ class Parser(object):
 
             statement = tree.WhileStatement(condition=condition, body=action)
             statement._position = token.position
+            self.logs.append(log.Log(token.position[0], str(tree.WhileStatement.__class__)))
             return statement
 
         elif self.try_accept('do'):
@@ -1438,6 +1448,7 @@ class Parser(object):
 
             statement = tree.DoStatement(condition=condition, body=action)
             statement._position = token.position
+            self.logs.append(log.Log(token.position[0], str(tree.DoStatement.__class__)))
             return statement
 
         elif self.try_accept('for'):
@@ -1447,6 +1458,7 @@ class Parser(object):
             for_statement = self.parse_statement()
 
             statement = tree.ForStatement(control=for_control, body=for_statement)
+            self.logs.append(log.Log(token.position[0], str(tree.ForStatement.__class__)))
             statement._position = token.position
             return statement
 
@@ -1459,6 +1471,7 @@ class Parser(object):
             self.accept(';')
 
             statement = tree.BreakStatement(goto=label)
+            self.logs.append(log.Log(token.position[0], str(tree.BreakStatement.__class__)))
             statement._position = token.position
             return statement
 
@@ -1471,6 +1484,7 @@ class Parser(object):
             self.accept(';')
 
             statement = tree.ContinueStatement(goto=label)
+            self.logs.append(log.Log(token.position[0], str(tree.ContinueStatement.__class__)))
             statement._position = token.position
             return statement
 
@@ -1483,6 +1497,7 @@ class Parser(object):
             self.accept(';')
 
             statement = tree.ReturnStatement(expression=value)
+            self.logs.append(log.Log(token.position[0], str(tree.ReturnStatement.__class__)))
             statement._position = token.position
             return statement
 
@@ -1491,6 +1506,7 @@ class Parser(object):
             self.accept(';')
 
             statement = tree.ThrowStatement(expression=value)
+            self.logs.append(log.Log(token.position[0], str(tree.ThrowStatement.__class__)))
             statement._position = token.position
             return statement
 
@@ -1499,6 +1515,7 @@ class Parser(object):
             block = self.parse_block()
 
             statement = tree.SynchronizedStatement(lock=lock, block=block)
+            self.logs.append(log.Log(token.position[0], str(tree.SynchronizedStatement.__class__)))
             statement._position = token.position
             return statement
 
@@ -1534,9 +1551,18 @@ class Parser(object):
                                      block=block,
                                      catches=catches,
                                      finally_block=finally_block)
+            self.logs.append(log.Log(token.position[0], str(tree.TryStatement.__class__)))
             statement._position = token.position
             return statement
+            '''elif self.try_accept('logger') or self.try_accept('log'):
+            print("!!logstatement, token position:", token.position)
+            value = self.parse_expression()
+            self.accept(';')
 
+            statement = tree.SynchronizedStatement(expression=value)
+
+            statement._position = token.position
+            return statement'''
         else:
             expression = self.parse_expression()
             self.accept(';')

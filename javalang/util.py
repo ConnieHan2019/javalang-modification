@@ -145,7 +145,7 @@ class LookAheadListIterator(object):
         else:
             self.pop_marker(False)
 
-    def push_marker(self):
+    def atpush_marker(self):
         """ Push a marker on to the marker stack """
         self.saved_markers.append(self.marker)
 

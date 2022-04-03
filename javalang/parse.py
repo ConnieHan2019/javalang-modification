@@ -50,4 +50,5 @@ def parse_type_signature(sig):
 def parse(s):
     tokens = tokenize(s)
     parser = Parser(tokens)
+    # CompilationUnit,has attribute package, imports, types
     return parser.parse()

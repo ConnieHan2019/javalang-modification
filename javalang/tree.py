@@ -167,6 +167,9 @@ class BlockStatement(Statement):
 class StatementExpression(Statement):
     attrs = ("expression",)
 
+class LogStatement(Statement):
+    attrs = ("expression",)
+
 # ------------------------------------------------------------------------------
 
 class TryResource(Declaration):
